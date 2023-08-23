@@ -253,6 +253,36 @@ def create_asset_archive(name, version):
     return output_filename
 
 
+def ensure_manifest_exists(work_dir, temp_name, new_dir):
+    """Ensures that manifest file is copied from `work_dir` to `new_dir`
+    NOTE: This may not be needed as logic/functionality is not very well understood
+    """
+    # Do nothing for non-windows platforms
+    if system.get_system() != "win":
+        return
+
+    src_exe_file_path = os.path.join(work_dir, temp_name, f"{temp_name}.exe")
+    src_exe_exists = os.path.exists(src_exe_file_path)
+
+    src_manifest_file_path = f"{src_exe_file_path}.manifest"
+    src_manifest_exists = os.path.exists(src_manifest_file_path)
+    
+    dst_exe_file_path = os.path.join(new_dir, temp_name, f"{temp_name}.exe")
+    dst_exe_exists = os.path.exists(dst_exe_file_path)
+    
+    dst_manifest_file_path = f"{dst_exe_file_path}.manifest"
+    dst_manifest_exists = os.path.exists(dst_manifest_file_path)
+
+    log.debug(f"""Check .exe and .manifest presence:
+SRC: - {src_exe_file_path} (exists={src_exe_exists})
+SRC: - {src_manifest_file_path} (exists={src_manifest_exists})
+DST: - {dst_exe_file_path} (exists={dst_exe_exists})
+DST: - {dst_manifest_file_path} (exists={dst_manifest_exists})
+""")
+    if src_manifest_exists and not dst_manifest_exists:
+        shutil.move(src_manifest_file_path, dst_manifest_file_path)
+
+
 def make_archive(name, target, version, archive_format):
     """Used to make archives of file or dir. Zip on windows and tar.gz
     on all other platforms
@@ -267,6 +297,7 @@ def make_archive(name, target, version, archive_format):
     Returns:
          (str) - name of archive
     """
+    log.debug(f"About to make archive: name={name}, target={target}, version={version}, archive_format={archive_format}")
     log.debug("starting archive")
     ext = os.path.splitext(target)[1]
     temp_file = name + ext
@@ -283,14 +314,17 @@ def make_archive(name, target, version, archive_format):
         file_ext = ".exe" if system.get_system() == "win" else ""
         src_executable = temp_file + os.sep + target + file_ext
         dst_executable = temp_file + os.sep + name + file_ext
+
         # is an osx bundle app so does not need to fix the executable name
         if ext != ".app":
+            log.debug(f"About to move executable \n  '{src_executable}' ({os.path.abspath(src_executable)}) \n  to \n  '{dst_executable}' ({os.path.abspath(dst_executable)})")
             shutil.move(src_executable, dst_executable)
 
         # is a win folder so the manifest need to be renamed too
         if system.get_system() == "win":
             src_manifest = src_executable + ".manifest"
             dst_manifest = dst_executable + ".manifest"
+            log.debug(f"About to move manifest \n  '{src_manifest}' ({os.path.abspath(src_manifest)}) \n  to \n  '{dst_manifest}' ({os.path.abspath(dst_manifest)})")
             shutil.move(src_manifest, dst_manifest)
 
     file_dir = os.path.dirname(os.path.abspath(target))

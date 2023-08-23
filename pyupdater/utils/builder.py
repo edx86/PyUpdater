@@ -38,7 +38,7 @@ from PyInstaller.__main__ import run as pyi_build
 from pyupdater import settings
 from pyupdater.hooks import get_hook_dir
 from pyupdater.utils.pyinstaller_compat import pyi_makespec
-from pyupdater.utils import create_asset_archive, make_archive
+from pyupdater.utils import create_asset_archive, ensure_manifest_exists, make_archive
 from pyupdater.utils.config import ConfigManager
 
 
@@ -83,6 +83,9 @@ class Builder(object):  # pragma: no cover
 
         # Build executable
         self._build(spec_file_path)
+
+        # Ensure that manifest (if present) is copied
+        ensure_manifest_exists(self.work_dir, temp_name, self.new_dir)
 
         # Archive executable
         self._archive(temp_name)
