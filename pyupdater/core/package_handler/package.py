@@ -183,7 +183,7 @@ class Package(object):
 
         log.debug("Extracting update archive info for: %s", package_basename)
         try:
-            v = Version(package_basename)
+            v = Version(self._parse_package_version(package_basename))
             self.channel = v.channel
             self.version = str(v)
         except VersionError:
@@ -226,3 +226,19 @@ class Package(object):
 
         log.debug("Regex name: %s", name)
         return name
+    
+    def _parse_package_version(self, package):
+        # Returns package version from update archive name
+        basename = os.path.basename(package)
+        try:
+            re_str = r"-(?P<version>([\d\.alpha|beta]-?)+)\.[zip|tar|gz|bz2]+"
+            version_regex = re.compile(re_str)
+            r = version_regex.search(basename)
+            version = r.groupdict()["version"]
+        except Exception as err:
+            self.info["reason"] = str(err)
+            version = None
+        
+        log.debug("Regex versions: %s", version)
+        return version
+
