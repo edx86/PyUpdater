@@ -446,6 +446,9 @@ class Client(object):
                         http_timeout=self.http_timeout,
                     )
                 data = fd.download_verify_return()
+                if data is None or len(data) == 0:
+                    log.debug(f"Version file '{vf}' does not exist or is empty")
+                    continue
                 try:
                     decompressed_data = _gzip_decompress(data)
                 except IOError:
@@ -480,6 +483,9 @@ class Client(object):
                     http_timeout=self.http_timeout,
                 )
             data = fd.download_verify_return()
+            if data is None or len(data) == 0:
+                log.debug(f"Key file '{self.key_file}' does not exist or is empty")
+                return None
             try:
                 decompressed_data = _gzip_decompress(data)
             except IOError:
@@ -512,9 +518,9 @@ class Client(object):
         if data is None:
             data = self._get_manifest_from_disk()
 
-        if data is not None:
+        if data is not None and len(data) > 0:
             try:
-                log.debug("Data type: %s", type(data))
+                log.debug("Data type: %s, len: %d", type(data), len(data))
                 # If json fails to load self.ready will stay false
                 # which will cause _update_check to exit early
                 self.json_data = json.loads(data.decode("utf-8"))
@@ -578,7 +584,7 @@ class Client(object):
         # Create required directories on end-users computer
         # to place verified update data
         # Very safe director maker :)
-        log.debug("Setting up directories...")
+        log.debug(f"Setting up directories...:\n  {self.data_dir}\n  {self.update_folder}")
         dirs = [self.data_dir, self.update_folder]
         for d in dirs:
             if not os.path.exists(d):
